@@ -27,8 +27,6 @@ function HapticController:shake(hapticEffectType: Enum.HapticEffectType)
 	Debris:AddItem(hapticEffect, 3) -- Temp
 end
 
-function HapticController:KnitInit()
-	print("HapticController Initiated")
-end
+function HapticController:KnitInit() end
 
 return HapticController

@@ -104,7 +104,6 @@ function MonetizationController:KnitInit()
 	end)
 
 	self.NotificationController = knit.GetController("NotificationController")
-	print("MonetizationController Initiated.")
 end
 
 return MonetizationController

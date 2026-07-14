@@ -3,61 +3,61 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Packages
 local knit = require(ReplicatedStorage.src.Packages.knit)
-
--- Utility
-local TypeCheck = require(ReplicatedStorage.src.utility.TypeCheck)
-local InstanceCreator = require(ReplicatedStorage.src.utility.InstanceCreator)
-
 -->
 local DataService = knit.CreateService({
 	Name = "DataService",
-	Client = {},
+
+	Client = {
+		ValueObjectChanged = knit.CreateSignal(),
+	},
 	Data = {},
-	ClientDataChanges = {},
-	Utility = require(script.utility),
+
+	ValueObjectModule = require(script.ValueObject),
 	LeaderstatsHandler = require(script.leaderstats),
 })
 
-function DataService.Client:getProfileKeys(player: Player)
+-- Client Exposed Methods
+function DataService.Client:GetProfileKeys(player: Player)
 	local dataToReturn: { string } = {}
 
-	local profile = self.Server:getProfile(player)
+	local profile = self.Server:GetProfile(player)
 	for key: string, _ in pairs(profile) do
 		table.insert(dataToReturn, key)
 	end
 	return dataToReturn
 end
 
-function DataService.Client:getValue(player: Player, valueName: string): any
-	return self.Server:getValue(player, valueName)
+function DataService.Client:GetValue(player: Player, valueName: string): any
+	return self.Server:GetValue(player, valueName)
 end
 
-function DataService:getValue(player: Player, valueName: string): any
-	assert(TypeCheck.Instance(player), "player arg must be a player")
-	local playerData = self:getProfile(player)
+-- Server Only Methods
+function DataService:GetValue(player: Player, valueName: string): any
+	assert(typeof(player) == "Instance", "player arg must be a player")
+	local playerData = self:GetProfile(player)
 	return playerData and playerData[valueName]:Get()
 end
 
-function DataService:get(player: Player, valueName: string)
-	assert(TypeCheck.Instance(player), "player arg must be a player")
-	local playerData = self:getProfile(player)
+function DataService:GetValueObject(player: Player, valueName: string)
+	assert(typeof(player) == "Instance", "player arg must be a player")
+	local playerData = self:GetProfile(player)
 	return playerData[valueName]
 end
 
-function DataService:getProfile(player: Player)
-	assert(TypeCheck.Instance(player), "player arg must be a player")
+function DataService:GetProfile(player: Player)
+	assert(typeof(player) == "Instance", "player arg must be a player")
 	return self.Data[player]
 end
 
-function DataService:delete(player: Player, valueName: string)
-	assert(TypeCheck.Instance(player), "player arg must be a player")
-	local playerData = self:getProfile(player)
+function DataService:Delete(player: Player, valueName: string)
+	assert(typeof(player) == "Instance", "player arg must be a player")
+	local playerData = self:GetProfile(player)
 	playerData[valueName]:Destroy()
 	playerData[valueName] = nil
 end
 
-function DataService:create(player: Player, profileData, valueData: { Name: string, Value: any })
-	local playerData = self:getProfile(player)
+function DataService:Create(player: Player, profileData, valueData: { Name: string, Value: any })
+	local playerData = self:GetProfile(player)
 
 	local name = valueData.Name
 	local value = valueData.Value
@@ -65,50 +65,40 @@ function DataService:create(player: Player, profileData, valueData: { Name: stri
 	local valueExists = playerData[name] ~= nil
 	assert(valueExists == false, "Attempt to connect existing Value to player data")
 
-	playerData[name] = self.Utility.createValueObject(name, value, profileData, function(key: string, newValue: any?)
-		self.ClientDataChanges[player]:FireClient(player, key, newValue)
-	end)
+	playerData[name] = self.ValueObjectModule:Create(
+		name,
+		value,
+		profileData,
+		function(key: string, newValue: any?, customData: { Key: string, NewValue: any? }?)
+			self.Client.ValueObjectChanged:Fire(player, key, newValue, customData)
+		end
+	)
 	return playerData[name]
 end
 
-function DataService:connectProfile(player: Player, profileData)
+function DataService:ConnectProfile(player: Player, profileData)
 	self.Data[player] = {}
-	self.ClientDataChanges[player] = InstanceCreator("RemoteEvent", `{player.UserId}`, ReplicatedStorage.src.dataEvents)
 
 	for valueName: string, value: any in pairs(profileData) do
 		local valueData = {
 			Name = valueName,
 			Value = value,
 		}
-		self:create(player, profileData, valueData)
+		self:Create(player, profileData, valueData)
 	end
 
-	self.LeaderstatsHandler.setup(player, self:getProfile(player))
-
-	return {
-		["Function"] = self.disconnectProfile,
-		["Args"] = { self, player },
-	}
+	self.LeaderstatsHandler:Setup(player, self:GetProfile(player))
 end
 
-function DataService:disconnectProfile(player: Player)
-	self.LeaderstatsHandler.clear(player, self:getProfile(player))
-	local profile = self:getProfile(player)
+function DataService:DisconnectProfile(player: Player)
+	self.LeaderstatsHandler:Clear(player, self:GetProfile(player))
+	local profile = self:GetProfile(player)
 
 	for _, data in pairs(profile or {}) do
 		data:Destroy()
 	end
 
 	self.Data[player] = nil
-
-	if self.ClientDataChanges[player] then
-		self.ClientDataChanges[player]:Destroy()
-		self.ClientDataChanges[player] = nil
-	end
-end
-
-function DataService:KnitInit()
-	print(`DataService Initiated.`)
 end
 
 return DataService

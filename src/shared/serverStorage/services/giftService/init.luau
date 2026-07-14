@@ -81,7 +81,6 @@ function GiftService:KnitInit()
 	Players.PlayerRemoving:Connect(function(player)
 		self.Queue[player] = nil
 	end)
-	print("GiftService Initiated.")
 end
 
 return GiftService

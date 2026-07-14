@@ -25,7 +25,7 @@ end
 
 function CashService:getCashValueObject(player: Player)
 	assert(TypeCheck.Instance(player), "player arg must be a player")
-	return self.DataService:get(player, "Cash")
+	return self.DataService:GetValueObject(player, "Cash")
 end
 
 function CashService:manipulatePlayerCash(player: Player, change: number, arithmeticType: string, clientDelay: number?)
@@ -59,7 +59,6 @@ end
 
 function CashService:KnitInit()
 	self.DataService = knit.GetService("DataService")
-	print("CashService Initialized.")
 end
 
 return CashService

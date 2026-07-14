@@ -151,7 +151,6 @@ function AnimationController:KnitInit()
 	end
 
 	self.Player.CharacterAdded:Connect(defineNewCharacter)
-	print("AnimationController Initiated.")
 end
 
 return AnimationController

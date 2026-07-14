@@ -130,8 +130,6 @@ function GiftController:KnitInit()
 		table.remove(self.Players, _index)
 		self.RemoveButton:Fire(playerRemoved.UserId)
 	end)
-
-	print("GiftController Initiated.")
 end
 
 return GiftController

@@ -64,8 +64,6 @@ function CameraController:KnitInit()
 	camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
 		self.viewportSizeChanged:Fire(camera.ViewportSize)
 	end)
-
-	print("CameraController Initiated.")
 end
 
 return CameraController

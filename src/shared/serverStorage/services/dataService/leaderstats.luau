@@ -1,20 +1,22 @@
 -- Roblox Services
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
--- Utility
+-- Utility Modules
 local InstanceCreator = require(ReplicatedStorage.src.utility.InstanceCreator)
 
-local leaderstats = {}
-leaderstats.playerConnections = {}
-leaderstats.Config = require(ReplicatedStorage.src.GameConfiguration.Gameplay.leaderstatsConfig)
+-->
+local Leaderstats = {
+	PlayerConnections = {},
+	Config = require(ReplicatedStorage.src.GameConfiguration.Gameplay.leaderstatsConfig),
+}
 
-function leaderstats.setup(player: Player, playerData)
+function Leaderstats:Setup(player: Player, playerData)
 	local leaderstatsFolder = InstanceCreator("Folder", "leaderstats", player)
 
-	leaderstats.playerConnections[player] = {}
-	local playerConnectionsFolder = leaderstats.playerConnections[player]
+	self.PlayerConnections[player] = {}
+	local playerConnectionsFolder = self.PlayerConnections[player]
 
-	for _, valueName: string in pairs(leaderstats.Config.ValuesToDisplay) do
+	for _, valueName: string in pairs(self.Config.ValuesToDisplay) do
 		local leaderstatsValueInstance: NumberValue =
 			InstanceCreator("NumberValue", valueName, leaderstatsFolder) :: NumberValue
 
@@ -27,12 +29,12 @@ function leaderstats.setup(player: Player, playerData)
 	end
 end
 
-function leaderstats.clear(player: Player)
-	local connections = leaderstats.playerConnections[player] or {}
+function Leaderstats:Clear(player: Player)
+	local connections = self.PlayerConnections[player] or {}
 	for _, connection: RBXScriptConnection in pairs(connections) do
 		connection:Disconnect()
 	end
-	leaderstats.playerConnections[player] = nil
+	self.PlayerConnections[player] = nil
 end
 
-return leaderstats
+return Leaderstats

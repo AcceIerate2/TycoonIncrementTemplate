@@ -48,7 +48,6 @@ end
 function CashController:KnitInit()
 	self.EffectController = knit.GetController("EffectController")
 	self:listenToService()
-	print("CashController Initiated.")
 end
 
 return CashController

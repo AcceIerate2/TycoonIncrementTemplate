@@ -26,7 +26,22 @@ function PlayerService:load(player: Player)
 	playerDisconnectFunctions.profileStoreDisconnectFunction = profileStoreDisconnectFunction
 
 	-- DataService
-	playerDisconnectFunctions.dataServiceDisconnectFunction = self.DataService:connectProfile(player, profile.Data)
+	playerDisconnectFunctions.dataServiceDisconnectFunction = self.DataService:ConnectProfile(player, profile.Data)
+
+	-- PlotService
+	playerDisconnectFunctions.plotServiceDisconnectFunction = self.PlotService:Connect(player)
+
+	-- ResourceService
+	playerDisconnectFunctions.resourceServiceDisconnectFunction = self.ResourceService:Connect(player)
+
+	-- DepositService
+	playerDisconnectFunctions.depositServiceDisconnectFunction = self.DepositService:Connect(player)
+
+	-- ProcessService
+	playerDisconnectFunctions.processServiceDisconnectFunction = self.ProcessService:Connect(player)
+
+	-- ProcessUpgradeService
+	playerDisconnectFunctions.processUpgradeServiceDisconnectFunction = self.ProcessUpgradeService:Connect(player)
 
 	-- Gamepasses
 	self.MonetizationService:loadGamepasses(player)
@@ -40,10 +55,9 @@ function PlayerService:load(player: Player)
 			CollisionGroup = "PlayerCollisions",
 		}, {})
 
-		--[[local plot = self.PlotService:getPlayerPlot(player).Plot
-
+		local plotAsset = self.PlotService:GetPlayerPlotAsset(player)
 		local offset = Vector3.new(0, Character:GetExtentsSize().Y / 2, 0)
-		Character:PivotTo(plot.Spawn:GetPivot() + offset)]]
+		Character:PivotTo(plotAsset.Spawn:GetPivot() + offset)
 	end
 
 	if player.Character then
@@ -78,6 +92,11 @@ function PlayerService:KnitInit()
 	self.DataService = knit.GetService("DataService")
 	self.MonetizationService = knit.GetService("MonetizationService")
 	self.BadgeService = knit.GetService("BadgeService")
+	self.PlotService = knit.GetService("PlotService")
+	self.ResourceService = knit.GetService("ResourceService")
+	self.DepositService = knit.GetService("DepositService")
+	self.ProcessService = knit.GetService("ProcessService")
+	self.ProcessUpgradeService = knit.GetService("ProcessUpgradeService")
 
 	-- Player Connections
 	Players.PlayerAdded:Connect(function(player: Player)
@@ -95,8 +114,6 @@ function PlayerService:KnitInit()
 			self:unload(player)
 		end
 	end)
-
-	print(`PlayerService Initiated.`)
 end
 
 return PlayerService

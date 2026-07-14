@@ -174,8 +174,6 @@ function MonetizationService:KnitInit()
 			self:gamepassPurchaseHandler(player, passId, false)
 		end
 	)
-
-	print("MonetizationService Initiated.")
 end
 
 return MonetizationService

@@ -1,17 +1,12 @@
 -- Roblox Services
-local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Packages
 local knit = require(ReplicatedStorage.src.Packages.knit)
 
--- Utility
+-- Utility Modules
 local InstanceCreator = require(ReplicatedStorage.src.utility.InstanceCreator)
 local SafeFunctionCaller = require(ReplicatedStorage.src.utility.SafeFunctionCaller)
-local TypeCheck = require(ReplicatedStorage.src.utility.TypeCheck)
-
--- Folders
-local DataEventsFolder = ReplicatedStorage:WaitForChild("src"):WaitForChild("dataEvents")
 
 -->
 local DataController = knit.CreateController({
@@ -20,8 +15,8 @@ local DataController = knit.CreateController({
 	Data = {},
 })
 
-function DataController:getValue(valueName: string)
-	assert(TypeCheck.string(valueName), "valueName arg must be a string")
+function DataController:GetValue(valueName: string)
+	assert(typeof(valueName) == "string", "valueName arg must be a string")
 	local dataToReturn = self.Data[valueName]
 	if not dataToReturn then
 		repeat
@@ -32,30 +27,61 @@ function DataController:getValue(valueName: string)
 	return dataToReturn
 end
 
-function DataController:getValueChangedSignal(valueName: string)
+function DataController:GetValueChangedSignal(valueName: string)
 	local event = self.Events[valueName]
-	assert(event, `No client signal registered for "{valueName}"`)
+
+	if not event then
+		warn(
+			`[DataController] No client signal registered for "{valueName}" yet. Retrying for up to 3 seconds before failing.`
+		)
+	end
+
+	for _ = 3, 1, -1 do
+		event = self.Events[valueName]
+		if event then
+			break
+		end
+		task.wait(1)
+	end
+
+	assert(
+		event,
+		`[DataController] Failed to get client signal for "{valueName}" after waiting 3 seconds. Make sure it is created before calling GetValueChangedSignal().`
+	)
+
 	return event.Event
 end
 
 function DataController:connect()
-	local dataChangedRE: RemoteEvent = DataEventsFolder:WaitForChild(Players.LocalPlayer.UserId)
-	dataChangedRE.OnClientEvent:Connect(function(key: string, newValue: any?)
-		local eventToFire: BindableEvent = self.Events[key]
-		if not eventToFire then
-			return
+	local valueObjectChangedSignal = self.DataService.ValueObjectChanged
+	valueObjectChangedSignal:Connect(
+		function(key: string, newValue: any?, customDataChange: { Key: string | number, NewValue: any? })
+			local eventToFire: BindableEvent = self.Events[key]
+			if not eventToFire then
+				return
+			end
+
+			if typeof(customDataChange) == "table" then
+				newValue = self.Data[key]
+				if typeof(newValue) ~= "table" then
+					return
+				end
+
+				newValue[customDataChange.Key] = customDataChange.NewValue
+			end
+
+			eventToFire:Fire(newValue, customDataChange)
+			self.Data[key] = newValue
 		end
-		eventToFire:Fire(newValue)
-		self.Data[key] = newValue
-	end)
+	)
 end
 
 function DataController:loadEvents(profileKeys: { string })
-	assert(TypeCheck.table(profileKeys), "profileKeys arg must be a table")
+	assert(typeof(profileKeys) == "table", "profileKeys arg must be a table")
 	for _, valueName: string in pairs(profileKeys) do
 		self.Events[valueName] = InstanceCreator("BindableEvent", valueName, script)
 		self.DataService
-			:getValue(valueName)
+			:GetValue(valueName)
 			:andThen(function(data)
 				self.Data[valueName] = data
 			end)
@@ -66,18 +92,17 @@ end
 function DataController:KnitInit()
 	self.DataService = knit.GetService("DataService")
 	local status, keys = SafeFunctionCaller(function()
-		local _status, _keys = self.DataService:getProfileKeys():await()
-		assert(TypeCheck.boolean(_status) and _status == true, "getProfileKeys request failed.")
+		local _status, _keys = self.DataService:GetProfileKeys():await()
+		assert(typeof(_status) == "boolean" and _status == true, "GetProfileKeys request failed.")
 		return _keys
 	end)
 	assert(
-		TypeCheck.boolean(status) and status == true or not TypeCheck.table(keys),
-		"[SafeFunctionCaller] getProfileKeys request failed."
+		typeof(status) == "boolean" and status == true or typeof(keys) ~= "table",
+		"[SafeFunctionCaller] GetProfileKeys request failed."
 	)
 
 	self:loadEvents(keys)
 	self:connect()
-	print("DataController Initiated.")
 end
 
 return DataController

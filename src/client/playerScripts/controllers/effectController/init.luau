@@ -56,7 +56,6 @@ end
 
 function EffectController:KnitInit()
 	self:RequireEffects()
-	print("EffectController Initiated.")
 end
 
 return EffectController

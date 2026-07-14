@@ -34,7 +34,7 @@ function NotificationController:mutateCanvasPosition(position: UDim2)
 	self.canvasPositionChanged:Fire(position)
 end
 
-function NotificationController:push(notificationData)
+function NotificationController:Push(notificationData)
 	assert(TypeCheck.table(notificationData), "notificationData arg must be a Table")
 	if not TypeCheck.string(notificationData.Message) then
 		return
@@ -45,8 +45,12 @@ function NotificationController:push(notificationData)
 
 	self.Notifications[id] = notificationData
 
-	if notificationData.Sound then
-		soundHandler:play(notificationData.Sound, {
+	if typeof(notificationData.Sound) == "string" then
+		local sound = SoundService:WaitForChild("src")
+			:WaitForChild("Sfx")
+			:WaitForChild("NotificationSounds")
+			:WaitForChild(notificationData.Sound)
+		soundHandler:play(sound, {
 			PlayOver = true,
 			Parent = SoundService,
 		})
@@ -65,6 +69,13 @@ end
 
 function NotificationController:KnitInit()
 	print("NotificationController Initiated.")
+	self.NotificationService = knit.GetService("NotificationService")
+end
+
+function NotificationController:KnitStart()
+	self.NotificationService.Push:Connect(function(notificationData)
+		self:Push(notificationData)
+	end)
 end
 
 return NotificationController

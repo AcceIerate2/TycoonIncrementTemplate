@@ -14,5 +14,4 @@ return function()
 	print("Server Loaded.")
 	setup:Init(player)
 	buttons:Init(player)
-	print("UserInterface Initiated.")
 end

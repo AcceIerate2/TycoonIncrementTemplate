@@ -44,8 +44,6 @@ function badgeService:awardWelcomeBadges(player: Player)
 	end
 end
 
-function badgeService:KnitInit()
-	print("BadgeService Initiated.")
-end
+function badgeService:KnitInit() end
 
 return badgeService
