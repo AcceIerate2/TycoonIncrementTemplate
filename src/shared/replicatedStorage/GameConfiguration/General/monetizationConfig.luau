@@ -1,0 +1,3 @@
+local MonetizationConfig = {}
+
+return MonetizationConfig

@@ -48,7 +48,7 @@ function ProcessService:ClaimCash(player: Player)
 	local cashToClaimVO = self.DataService:GetValueObject(player, "CashToClaim")
 	local playerCashVO = self.DataService:GetValueObject(player, "Cash")
 
-	playerCashVO:Set(playerCashVO:Get() + cashToClaimVO:Get())
+	playerCashVO:Set(playerCashVO:Get() + (cashToClaimVO:Get() * self.DataService:GetValue(player, "CashMultiplier")))
 	cashToClaimVO:Set(0)
 end
 

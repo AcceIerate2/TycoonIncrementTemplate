@@ -8,6 +8,7 @@ local knit = require(ReplicatedStorage.src.Packages.knit)
 -- Utility Modules
 local TypeCheck = require(ReplicatedStorage.src.utility.TypeCheck)
 local NumberShortner = require(ReplicatedStorage.src.utility.NumberShortner)
+local AvatarHeadshot = require(ReplicatedStorage.src.utility.AvatarHeadshot)
 
 -- Config Modules
 local itemConfig = require(ReplicatedStorage.src.GameConfiguration.General.itemConfig)
@@ -250,6 +251,7 @@ function PlotService:PlaceItem(player: Player, itemName: string)
 		_table[newSlotIndex] = referenceId
 	end)
 
+	self.IndexService:AddToIndex(player, itemName)
 	self:place(player, referenceId, newSlotIndex)
 end
 
@@ -295,6 +297,9 @@ function PlotService:Connect(player: Player)
 	plotState.Owner = player
 	plotState.Taken = true
 
+	plotState.Asset.Sign.SurfaceGui.ImageLabel.Image = AvatarHeadshot(player)
+	plotState.Asset.Sign.SurfaceGui.TextLabel.Text = `{player.Name}`
+
 	for slotIndex: number, referenceId: string in pairs(self.DataService:GetValue(player, "TakenSlots")) do
 		self:place(player, referenceId, slotIndex)
 	end
@@ -304,6 +309,8 @@ function PlotService:Disconnect(player: Player)
 	assert(TypeCheck.Instance(player) and player:IsA("Player"), "player arg must be a Player Instance")
 	local plotAsset = self:GetPlayerPlotAsset(player)
 	local plotState: PlotState = self.PlotStates[plotAsset]
+	plotAsset.Sign.SurfaceGui.ImageLabel.Image = ""
+	plotAsset.Sign.SurfaceGui.TextLabel.Text = `N/A`
 	plotState.Asset.Owner.Value = nil
 	plotState.Owner = nil
 	plotState.Taken = false
@@ -315,6 +322,7 @@ function PlotService:KnitInit()
 	self.CashService = knit.GetService("CashService")
 	self.MergeService = knit.GetService("MergeService")
 	self.ResourceService = knit.GetService("ResourceService")
+	self.IndexService = knit.GetService("IndexService")
 end
 
 function PlotService:KnitStart()

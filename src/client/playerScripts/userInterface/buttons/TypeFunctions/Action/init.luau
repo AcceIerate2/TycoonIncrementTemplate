@@ -5,7 +5,10 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TypeCheck = require(ReplicatedStorage.src.utility.TypeCheck)
 
 -->
-local functions = {}
+local functions = {
+	Teleport = require(script.teleportAction),
+	PurchasePrompt = require(script.purchasePromptAction),
+}
 
 return function(button)
 	if not button then
