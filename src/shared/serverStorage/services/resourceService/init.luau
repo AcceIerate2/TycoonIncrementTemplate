@@ -97,6 +97,25 @@ function ResourceService:DeactivateItem(player: Player, itemAsset: any)
 	end
 end
 
+function ResourceService:GetResourcesOutput(player: Player)
+	assert(isPlayer(player), "player arg must be a Player Instance")
+	local profile = self:getProfile(player)
+	if not profile then
+		return
+	end
+
+	local resources = 0
+	for itemAsset: any, count: number in pairs(profile) do
+		local referenceId = itemAsset.Name
+		local itemName = referenceId:split("_")[1]
+		local resource = itemConfig.Items[itemName].Resource
+		local amount = resourceConfig.Resources[resource].Amount
+		resources += amount
+	end
+
+	return resources
+end
+
 function ResourceService:GetTotalOutput(player: Player)
 	assert(isPlayer(player), "player arg must be a Player Instance")
 	local profile = self:getProfile(player)
@@ -124,7 +143,6 @@ function ResourceService:Output(player: Player)
 		end
 
 		profile[itemAsset] += 1
-
 		task.delay(math.random(0, 100) / 100, function()
 			self.Client.Output:Fire(player, itemAsset)
 		end)
@@ -173,7 +191,6 @@ end
 
 -- LifeCycle
 function ResourceService:KnitInit()
-	self.PlotService = knit.GetService("PlotService")
 	self.DataService = knit.GetService("DataService")
 end
 

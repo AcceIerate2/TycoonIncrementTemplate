@@ -68,7 +68,6 @@ function NotificationController:Push(notificationData)
 end
 
 function NotificationController:KnitInit()
-	print("NotificationController Initiated.")
 	self.NotificationService = knit.GetService("NotificationService")
 end
 

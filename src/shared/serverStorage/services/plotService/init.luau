@@ -79,6 +79,33 @@ function PlotService:getSlotIndexByPlacedItemId(player: Player, referenceId: str
 	return
 end
 
+function PlotService:place(player: Player, referenceId: string, slotIndex: number?)
+	assert(TypeCheck.Instance(player) and player:IsA("Player"), "player arg must be a Player Instance")
+	assert(TypeCheck.string(referenceId), "referenceId arg must be a string")
+
+	local plotAsset = self:GetPlayerPlotAsset(player)
+	if not plotAsset then
+		return
+	end
+
+	local newSlotIndex = slotIndex or self:getAvailableSlotIndex(player)
+	local standIndex = math.ceil(newSlotIndex / 10)
+	while not plotAsset.Stands:FindFirstChild(`Stand_{standIndex}`) do
+		self:AddStand(player, true)
+		task.wait()
+	end
+
+	local itemName = referenceId:split("_")[1]
+	local slotSpawn = self:getSlotSpawn(player, newSlotIndex, standIndex)
+	local itemAsset = getItemAsset(itemName)
+	itemAsset:SetAttribute("Type", itemName)
+	itemAsset.Name = referenceId
+	itemAsset:PivotTo(slotSpawn:GetPivot())
+	itemAsset.Parent = plotAsset.PlacedItems
+
+	self.ResourceService:ActivateItem(player, itemAsset)
+end
+
 -- Public Methods
 function PlotService:SortItems(player: Player)
 	assert(TypeCheck.Instance(player) and player:IsA("Player"), "player arg must be a Player Instance")
@@ -139,7 +166,7 @@ function PlotService:PurchaseItem(player: Player, amount: number)
 	local purchasesVO = self.DataService:GetValueObject(player, "Purchases")
 
 	local cost = itemConfig.GetCost(purchasesVO:Get())
-	if not self.CashService:canAfford(player, cost) then
+	if not self.CashService:canAfford(player, cost * amount) then
 		local cashNeeded = cost - self.DataService:GetValue(player, "Cash")
 		return {
 			Status = false,
@@ -165,22 +192,31 @@ end
 
 function PlotService:AddStand(player: Player, syncData: boolean)
 	assert(TypeCheck.Instance(player) and player:IsA("Player"), "player arg must be a Player Instance")
+
 	local plotAsset = self:GetPlayerPlotAsset(player)
 	local extraStandsValueObject = self.DataService:GetValueObject(player, "ExtraStands")
 
-	local lastStand = plotAsset.Stands:FindFirstChild(`Stand_{extraStandsValueObject:Get() + 1}`)
+	local lastStandIndex = 0
+	for _, standAsset in ipairs(plotAsset.Stands:GetChildren()) do
+		local standIndex = tonumber(standAsset.Name:match("^Stand_(%d+)$"))
+		if standIndex and standIndex > lastStandIndex then
+			lastStandIndex = standIndex
+		end
+	end
+
+	local lastStand = plotAsset.Stands:FindFirstChild(`Stand_{lastStandIndex}`)
 	if not lastStand then
-		warn(`Couldn't find last stand`)
+		warn("Couldn't find last stand")
 		return
 	end
 
 	local newStand = StandTemplate:Clone()
-	newStand.Name = `Stand_{extraStandsValueObject:Get() + 2}`
+	newStand.Name = `Stand_{lastStandIndex + 1}`
 	newStand:PivotTo(lastStand:GetPivot() * CFrame.new(0, lastStand:GetExtentsSize().Y / 2, 0) * CFrame.new(0, 10, 0))
 	newStand.Parent = plotAsset.Stands
 
 	if syncData then
-		extraStandsValueObject:Set(extraStandsValueObject:Get() + 1)
+		extraStandsValueObject:Set(lastStandIndex)
 	end
 end
 
@@ -208,27 +244,13 @@ function PlotService:PlaceItem(player: Player, itemName: string)
 
 	itemName = itemName:split("_")[1]
 	local referenceId = `{itemName}_{HttpService:GenerateGUID(false)}`
-	local plotAsset = self:GetPlayerPlotAsset(player)
-
 	local newSlotIndex = self:getAvailableSlotIndex(player)
-	local standIndex = math.ceil(newSlotIndex / 10)
-	if not plotAsset.Stands:FindFirstChild(`Stand_{standIndex}`) then
-		self:AddStand(player, true)
-	end
-
-	local slotSpawn = self:getSlotSpawn(player, newSlotIndex, standIndex)
-
-	local itemAsset = getItemAsset(itemName)
-	itemAsset:SetAttribute("Type", itemName)
-	itemAsset.Name = referenceId
-	itemAsset:PivotTo(slotSpawn:GetPivot())
-	itemAsset.Parent = plotAsset.PlacedItems
 
 	self.DataService:GetValueObject(player, "TakenSlots"):Update(function(_table)
 		_table[newSlotIndex] = referenceId
 	end)
 
-	self.ResourceService:ActivateItem(player, itemAsset)
+	self:place(player, referenceId, newSlotIndex)
 end
 
 function PlotService:RemoveItem(player: Player, referenceId: string)
@@ -272,6 +294,10 @@ function PlotService:Connect(player: Player)
 	plotState.Asset.Owner.Value = player
 	plotState.Owner = player
 	plotState.Taken = true
+
+	for slotIndex: number, referenceId: string in pairs(self.DataService:GetValue(player, "TakenSlots")) do
+		self:place(player, referenceId, slotIndex)
+	end
 end
 
 function PlotService:Disconnect(player: Player)

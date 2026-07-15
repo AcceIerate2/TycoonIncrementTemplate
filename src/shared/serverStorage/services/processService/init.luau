@@ -7,7 +7,11 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local knit = require(ReplicatedStorage.src.Packages.knit)
 
 -- Utility Modules
+local NumberShortner = require(ReplicatedStorage.src.utility.NumberShortner)
 local partOfCharacter = require(ReplicatedStorage.src.utility.partOfCharacter)
+
+-- Config Modules
+local processUpgradeConfig = require(ReplicatedStorage.src.GameConfiguration.General.processUpgradeConfig)
 
 -- Helper Functions
 local function isPlayer(player: Player?): boolean
@@ -85,6 +89,31 @@ function ProcessService:Connect(player: Player)
 				self:ClaimCash(player)
 			end)
 		)
+
+		local unprocessedResourcesVO = self.DataService:GetValueObject(player, "UnprocessedResources")
+		local processIncrementVO = self.DataService:GetValueObject(player, "ProcessIncrement")
+		local cashToClaimVO = self.DataService:GetValueObject(player, "CashToClaim")
+		local resourcesVO = self.DataService:GetValueObject(player, "Resources")
+
+		local function update()
+			plotAsset.Buttons.CashCollector.Gui.Cash.Text = `${NumberShortner(cashToClaimVO:Get())}`
+			plotAsset.UI.ProcessUI.SurfaceGui.Resources.Text = `{NumberShortner(unprocessedResourcesVO:Get())}`
+			plotAsset.UI.ProcessUI.SurfaceGui.ProcessIncrement.Text =
+				`{NumberShortner(processIncrementVO:Get())} per second`
+
+			local level = self.DataService:GetValue(player, "ProcessUpgradeLevel")
+			local upgradeCost = processUpgradeConfig.GetCost(level + 1)
+			local extraIncrement = processUpgradeConfig.GetIncrement(level + 1) - processIncrementVO:Get()
+
+			plotAsset.Buttons.ConversionRateUpgrader.Gui.Cost.Text = `${NumberShortner(upgradeCost)}`
+			plotAsset.Buttons.ConversionRateUpgrader.Gui.ExtraIncrement.Text = `+{extraIncrement}`
+		end
+
+		update()
+		table.insert(self.Connections[player], processIncrementVO.Changed:Connect(update))
+		table.insert(self.Connections[player], unprocessedResourcesVO.Changed:Connect(update))
+		table.insert(self.Connections[player], resourcesVO.Changed:Connect(update))
+		table.insert(self.Connections[player], cashToClaimVO.Changed:Connect(update))
 	end
 
 	return {

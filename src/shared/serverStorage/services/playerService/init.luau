@@ -28,11 +28,11 @@ function PlayerService:load(player: Player)
 	-- DataService
 	playerDisconnectFunctions.dataServiceDisconnectFunction = self.DataService:ConnectProfile(player, profile.Data)
 
-	-- PlotService
-	playerDisconnectFunctions.plotServiceDisconnectFunction = self.PlotService:Connect(player)
-
 	-- ResourceService
 	playerDisconnectFunctions.resourceServiceDisconnectFunction = self.ResourceService:Connect(player)
+
+	-- PlotService
+	playerDisconnectFunctions.plotServiceDisconnectFunction = self.PlotService:Connect(player)
 
 	-- DepositService
 	playerDisconnectFunctions.depositServiceDisconnectFunction = self.DepositService:Connect(player)
@@ -42,6 +42,11 @@ function PlayerService:load(player: Player)
 
 	-- ProcessUpgradeService
 	playerDisconnectFunctions.processUpgradeServiceDisconnectFunction = self.ProcessUpgradeService:Connect(player)
+
+	-- BuyItemService
+	playerDisconnectFunctions.buyItemServiceDisconnectFunction = self.BuyItemService:Connect(player)
+
+	playerDisconnectFunctions.offlineResourceServiceDisconnectFunction = self.OfflineResourceService:Connect(player)
 
 	-- Gamepasses
 	self.MonetizationService:loadGamepasses(player)
@@ -97,6 +102,8 @@ function PlayerService:KnitInit()
 	self.DepositService = knit.GetService("DepositService")
 	self.ProcessService = knit.GetService("ProcessService")
 	self.ProcessUpgradeService = knit.GetService("ProcessUpgradeService")
+	self.BuyItemService = knit.GetService("BuyItemService")
+	self.OfflineResourceService = knit.GetService("OfflineResourceService")
 
 	-- Player Connections
 	Players.PlayerAdded:Connect(function(player: Player)
