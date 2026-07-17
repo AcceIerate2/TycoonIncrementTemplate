@@ -8,6 +8,7 @@ local TypeCheck = require(ReplicatedStorage.src.utility.TypeCheck)
 local functions = {
 	Teleport = require(script.teleportAction),
 	PurchasePrompt = require(script.purchasePromptAction),
+	DiscardRng = require(script.discardRng),
 }
 
 return function(button)

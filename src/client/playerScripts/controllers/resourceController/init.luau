@@ -16,6 +16,7 @@ local itemConfig = require(ReplicatedStorage.src.GameConfiguration.General.itemC
 local Player = Players.LocalPlayer
 local Assets = ReplicatedStorage:WaitForChild("Assets")
 local ResourceAssets = Assets:WaitForChild("Resources")
+local RngAssets = Assets:WaitForChild("RngAssets")
 
 -- Helper Functions
 local function getBallAsset(resourceAsset: any)
@@ -44,6 +45,20 @@ local function getResourceAsset(itemAsset: any, resource: string)
 	return resourceAsset
 end
 
+local function getRngAsset(itemAsset: any, rngItem: string)
+	local rngAsset = RngAssets:FindFirstChild(rngItem) and RngAssets:FindFirstChild(rngItem):Clone()
+	rngAsset:PivotTo(itemAsset:GetPivot() * CFrame.new(5, 0, 0))
+	CollisionHandler.ToggleCollisionProperties(rngAsset, {
+		Anchored = false,
+		CanCollide = false,
+		CanTouch = false,
+		CanQuery = false,
+		Massless = true,
+	}, {})
+	rngAsset.Parent = workspace
+	return rngAsset
+end
+
 local function weld(resourceAsset: any, ballAsset: any)
 	for _, child in pairs(resourceAsset:GetDescendants()) do
 		if ballAsset == child or not child:IsA("BasePart") then
@@ -66,6 +81,30 @@ local ResourceController = knit.CreateController({
 -- Private Methods
 function ResourceController:itemAssetEffects(itemAsset: any) end
 
+function ResourceController:outputRng(itemAsset: any, rngItem: string)
+	self:itemAssetEffects(itemAsset)
+	rngItem = rngItem:split("_")[1]
+
+	local rngAsset = getRngAsset(itemAsset, rngItem)
+	local ballAsset = getBallAsset(rngAsset)
+
+	ballAsset:AddTag("Rng")
+
+	rngAsset.Parent = workspace
+	weld(rngAsset, ballAsset)
+
+	task.delay(120, function()
+		if rngAsset and rngAsset.Parent then
+			self.ResourceService
+				:RngItemDestroyed(itemAsset)
+				:andThen(function()
+					rngAsset:Destroy()
+				end)
+				:catch(warn)
+		end
+	end)
+end
+
 function ResourceController:output(itemAsset: any)
 	self:itemAssetEffects(itemAsset)
 
@@ -77,11 +116,11 @@ function ResourceController:output(itemAsset: any)
 
 	ballAsset:AddTag("Resource")
 
-	resourceAsset.Parent = itemAsset
+	resourceAsset.Parent = workspace
 	weld(resourceAsset, ballAsset)
 
 	task.delay(120, function()
-		if itemAsset and itemAsset.Parent and resourceAsset and resourceAsset.Parent then
+		if resourceAsset and resourceAsset.Parent then
 			self.ResourceService
 				:ResourceDestroyed(itemAsset)
 				:andThen(function()
@@ -90,6 +129,25 @@ function ResourceController:output(itemAsset: any)
 				:catch(warn)
 		end
 	end)
+end
+
+function ResourceController:claimRng(hitbox)
+	local isRngItem = hitbox:HasTag("Rng")
+	if not isRngItem then
+		return
+	end
+
+	if hitbox:GetAttribute("Claiming") then
+		return
+	end
+
+	hitbox:SetAttribute("Claiming", true)
+	self.ResourceService
+		:ClaimRng(hitbox.Parent.Name)
+		:andThen(function()
+			hitbox.Parent:Destroy()
+		end)
+		:catch(warn)
 end
 
 function ResourceController:claimResource(hitbox)
@@ -158,7 +216,11 @@ function ResourceController:listenToCharacterTouchConnections()
 		table.insert(
 			connections,
 			hitbox.Touched:Connect(function(partThatTouched: BasePart)
-				self:claimResource(partThatTouched)
+				if partThatTouched:HasTag("Resouce") then
+					self:claimResource(partThatTouched)
+				elseif partThatTouched:HasTag("Rng") then
+					self:claimRng(partThatTouched)
+				end
 			end)
 		)
 	end
@@ -172,15 +234,32 @@ function ResourceController:listenToCharacterTouchConnections()
 	end)
 end
 
+function ResourceController:listenToAutoCollectOrePart()
+	local plotAsset = self.PlotController:GetPlotAsset()
+	plotAsset:WaitForChild("AutoCollectOre").Touched:Connect(function(partThatTouched: BasePart)
+		if self.DataController:GetValue("AutoLoot") == true then
+			self:claimResource(partThatTouched)
+		end
+	end)
+end
+
 -- LifeCycle
 function ResourceController:KnitInit()
 	self.ResourceService = knit.GetService("ResourceService")
+	self.DataController = knit.GetController("DataController")
+	self.PlotController = knit.GetController("PlotController")
 end
 
 function ResourceController:KnitStart()
 	self:listenToCharacterTouchConnections()
+	self:listenToAutoCollectOrePart()
+
 	self.ResourceService.Output:Connect(function(itemAsset)
 		self:output(itemAsset)
+	end)
+
+	self.ResourceService.OutputRng:Connect(function(itemAsset, rngItem: string)
+		self:outputRng(itemAsset, rngItem)
 	end)
 end
 

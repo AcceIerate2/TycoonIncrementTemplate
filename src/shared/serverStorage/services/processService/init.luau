@@ -43,6 +43,21 @@ function ProcessService:process(player: Player)
 end
 
 -- Public Methods
+function ProcessService:ProcessAll(player: Player)
+	assert(isPlayer(player), "player arg must be a Player Instance")
+	local cashToClaimVO = self.DataService:GetValueObject(player, "CashToClaim")
+
+	local UnprocessedResourcesVO = self.DataService:GetValueObject(player, "UnprocessedResources")
+	if UnprocessedResourcesVO:Get() <= 0 then
+		return
+	end
+
+	local newCashToClaim = cashToClaimVO:Get() + UnprocessedResourcesVO:Get()
+	cashToClaimVO:Set(newCashToClaim)
+
+	UnprocessedResourcesVO:Set(0)
+end
+
 function ProcessService:ClaimCash(player: Player)
 	assert(isPlayer(player), "player arg must be a Player Instance")
 	local cashToClaimVO = self.DataService:GetValueObject(player, "CashToClaim")
@@ -57,10 +72,21 @@ function ProcessService:Connect(player: Player)
 	self.Connections[player] = {}
 
 	local elapsed = 0
+	local elapsedAutoCash = 0
+
 	table.insert(
 		self.Connections[player],
 		RunService.Heartbeat:Connect(function(deltaTime: number)
 			elapsed += deltaTime
+			elapsedAutoCash += deltaTime
+
+			if elapsedAutoCash >= 3 then
+				elapsedAutoCash = 0
+				if self.DataService:GetValue(player, "AutoMoney") then
+					self:ClaimCash(player)
+				end
+			end
+
 			if elapsed < 1 then
 				return
 			end

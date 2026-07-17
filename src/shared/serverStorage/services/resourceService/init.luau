@@ -8,6 +8,7 @@ local knit = require(ReplicatedStorage.src.Packages.knit)
 -- Config Modules
 local itemConfig = require(ReplicatedStorage.src.GameConfiguration.General.itemConfig)
 local resourceConfig = require(ReplicatedStorage.src.GameConfiguration.General.resourceConfig)
+local rngWeight = require(ReplicatedStorage.src.utility.rngWeight)
 
 -- Helper Functions
 local function isPlayer(player: Player?): boolean
@@ -18,13 +19,23 @@ end
 local ResourceService = knit.CreateService({
 	Name = "ResourceService",
 	Profiles = {},
+	RngItems = {},
 	Connections = {},
 	Client = {
 		Output = knit.CreateSignal(),
+		OutputRng = knit.CreateSignal(),
 	},
 })
 
 -- Client Exposed Methods
+function ResourceService.Client:ClaimRng(player: Player, rngItem: any)
+	return self.Server:claimRng(player, rngItem)
+end
+
+function ResourceService.Client:RngItemDestroyed(player: Player)
+	return self.Server:rngItemDestroyed(player)
+end
+
 function ResourceService.Client:ResourceDestroyed(player: Player, itemAsset: any)
 	return self.Server:resourceDestroyed(player, itemAsset)
 end
@@ -34,10 +45,32 @@ function ResourceService.Client:ClaimResource(player: Player, itemAsset: any)
 end
 
 -- Private Methods
+function ResourceService:claimRng(player: Player, rngItem: any)
+	assert(isPlayer(player), "player arg must be a Player Instance")
+	assert(typeof(rngItem) == "string", "rngItem arg must be a string")
+	self:rngItemDestroyed(player, rngItem)
+	self.InventoryService:EquipTool(player, self.InventoryService:Give(player, rngItem, "RngItem"))
+end
+
+function ResourceService:rngItemDestroyed(player: Player, rngItem: string)
+	assert(isPlayer(player), "player arg must be a Player Instance")
+	assert(typeof(rngItem) == "string", "rngItem arg must be a string")
+
+	if typeof(self.RngItems[player]) ~= "number" then
+		return
+	end
+
+	local index = table.find(self.RngItems[player], rngItem)
+	if index then
+		table.remove(self.RngItems[player], index)
+	end
+end
+
 function ResourceService:resourceDestroyed(player: Player, itemAsset: any)
 	assert(isPlayer(player), "player arg must be a Player Instance")
 	local profile = self:getProfile(player)
 	if not profile then
+		return
 	end
 
 	if profile[itemAsset] and profile[itemAsset] > 0 then
@@ -79,6 +112,21 @@ function ResourceService:getProfile(player: Player)
 end
 
 -- Public Methods
+function ResourceService:RngItemExists(player: Player, rngItem: string)
+	assert(isPlayer(player), "player arg must be a Player Instance")
+	assert(typeof(rngItem) == "string", "rngItem arg must be a string")
+	return table.find(self.RngItems[player], rngItem) ~= nil
+end
+
+function ResourceService:RemoveRngItem(player: Player, rngItem: string)
+	assert(isPlayer(player), "player arg must be a Player Instance")
+	assert(typeof(rngItem) == "string", "rngItem arg must be a string")
+	local index = table.find(self.RngItems[player], rngItem)
+	if index then
+		table.remove(self.RngItems[player], index)
+	end
+end
+
 function ResourceService:ActivateItem(player: Player, itemAsset: any)
 	assert(isPlayer(player), "player arg must be a Player Instance")
 	local profile = self:getProfile(player)
@@ -142,9 +190,27 @@ function ResourceService:Output(player: Player)
 			return
 		end
 
-		profile[itemAsset] += 1
+		local rng = math.random(1, 10) == 1
+		if rng then
+			local rngItem = rngWeight(itemConfig.Items[itemAsset.Name:split("_")[1]].RngItems)
+			table.insert(self.RngItems[player], rngItem)
+			task.delay(math.random(0, 100) / 100, function()
+				self.Client.OutputRng:Fire(player, itemAsset, rngItem)
+			end)
+			continue
+		end
+
+		local doubleOre = self.DataService:GetValue(player, "DoubleOre")
+		profile[itemAsset] += doubleOre and 2 or 1
+
 		task.delay(math.random(0, 100) / 100, function()
 			self.Client.Output:Fire(player, itemAsset)
+
+			if doubleOre then
+				task.delay(0.25, function()
+					self.Client.Output:Fire(player, itemAsset)
+				end)
+			end
 		end)
 	end
 end
@@ -153,6 +219,7 @@ function ResourceService:Connect(player: Player)
 	assert(isPlayer(player), "player arg must be a Player Instance")
 	self.Profiles[player] = {}
 	self.Connections[player] = {}
+	self.RngItems[player] = {}
 
 	local elapsed = 0
 	table.insert(
@@ -192,6 +259,7 @@ end
 -- LifeCycle
 function ResourceService:KnitInit()
 	self.DataService = knit.GetService("DataService")
+	self.InventoryService = knit.GetService("InventoryService")
 end
 
 return ResourceService

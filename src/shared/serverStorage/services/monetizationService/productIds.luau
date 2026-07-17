@@ -2,11 +2,11 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Packages
-local cashMultiplierConfig = require(ReplicatedStorage.src.GameConfiguration.General.cashMultiplierConfig)
 local knit = require(ReplicatedStorage.src.Packages.knit)
 
 -- Config Modules
 local cashProductsConfig = require(ReplicatedStorage.src.GameConfiguration.General.cashProductsConfig)
+local cashMultiplierConfig = require(ReplicatedStorage.src.GameConfiguration.General.cashMultiplierConfig)
 
 -->
 local ProductIds = {}
@@ -45,6 +45,12 @@ for _, config: { ProductId: number } in pairs(cashMultiplierConfig) do
 		cashMultiplierIndexVO:Set(cashMultiplierIndexVO:Get() + 1)
 		return true
 	end
+end
+
+-- Process All
+ProductIds[3610224390] = function(player: Player)
+	knit.GetService("ProcessService"):ProcessAll(player)
+	return true
 end
 
 return ProductIds

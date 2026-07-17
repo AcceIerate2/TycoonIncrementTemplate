@@ -3,6 +3,7 @@ return {
 		Cash = 1000,
 
 		Index = {},
+		Inventory = {},
 
 		CashToClaim = 0,
 		ProcessIncrement = 1,
@@ -17,6 +18,10 @@ return {
 
 		CashMultiplier = 1,
 		CashMultiplierIndex = 1,
+
+		AutoMoney = false,
+		AutoLoot = false,
+		DoubleOre = false,
 
 		LastSeen = 0,
 		JoinedBefore = false,

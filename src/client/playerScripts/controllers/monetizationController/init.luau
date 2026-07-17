@@ -60,7 +60,7 @@ function MonetizationController:getMonetizationItemInfo(monetizationType: "Produ
 end
 
 function MonetizationController:purchased()
-	self.NotificationController:push({
+	self.NotificationController:Push({
 		Message = `Thanks for your <font color="rgb(157, 255, 0)">purchase</font>! :D`,
 		Color = Color3.fromRGB(255, 255, 255),
 		Sound = purchaseSfx,

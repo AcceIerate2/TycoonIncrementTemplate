@@ -7,14 +7,29 @@ end
 ItemConfig.Items = {
 	Template = {
 		Resource = "Yes",
+		RngItems = {
+			Default = {
+				Weight = 50,
+			},
+		},
 	},
 
 	Test = {
 		Resource = "No",
+		RngItems = {
+			Default = {
+				Weight = 50,
+			},
+		},
 	},
 
 	Diamond = {
 		Resource = "Okay",
+		RngItems = {
+			Default = {
+				Weight = 50,
+			},
+		},
 	},
 }
 

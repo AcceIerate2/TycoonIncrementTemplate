@@ -1,5 +1,6 @@
 -- Roblox Services
 local HttpService = game:GetService("HttpService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Packages
@@ -297,8 +298,8 @@ function PlotService:Connect(player: Player)
 	plotState.Owner = player
 	plotState.Taken = true
 
-	plotState.Asset.Sign.SurfaceGui.ImageLabel.Image = AvatarHeadshot(player)
-	plotState.Asset.Sign.SurfaceGui.TextLabel.Text = `{player.Name}`
+	plotState.Asset.UI.SignUI.SurfaceGui.ImageLabel.Image = AvatarHeadshot(player)
+	plotState.Asset.UI.SignUI.SurfaceGui.TextLabel.Text = `{player.Name}`
 
 	for slotIndex: number, referenceId: string in pairs(self.DataService:GetValue(player, "TakenSlots")) do
 		self:place(player, referenceId, slotIndex)
@@ -309,8 +310,8 @@ function PlotService:Disconnect(player: Player)
 	assert(TypeCheck.Instance(player) and player:IsA("Player"), "player arg must be a Player Instance")
 	local plotAsset = self:GetPlayerPlotAsset(player)
 	local plotState: PlotState = self.PlotStates[plotAsset]
-	plotAsset.Sign.SurfaceGui.ImageLabel.Image = ""
-	plotAsset.Sign.SurfaceGui.TextLabel.Text = `N/A`
+	plotAsset.UI.SignUI.SurfaceGui.ImageLabel.Image = ""
+	plotAsset.UI.SignUI.SurfaceGui.TextLabel.Text = `N/A`
 	plotState.Asset.Owner.Value = nil
 	plotState.Owner = nil
 	plotState.Taken = false
@@ -332,6 +333,15 @@ function PlotService:KnitStart()
 			Taken = false,
 			Asset = plotAsset,
 		}
+
+		local clickDetector = plotAsset.Buttons.FinishProcess.ClickDetector :: ClickDetector
+		clickDetector.MouseClick:Connect(function(playerWhoClicked: Player)
+			if self.PlotStates[plotAsset].Owner ~= playerWhoClicked then
+				return
+			end
+
+			MarketplaceService:PromptProductPurchase(playerWhoClicked, 3610224390)
+		end)
 	end
 end
 
