@@ -40,8 +40,8 @@ function ResourceService.Client:ResourceDestroyed(player: Player, itemAsset: any
 	return self.Server:resourceDestroyed(player, itemAsset)
 end
 
-function ResourceService.Client:ClaimResource(player: Player, itemAsset: any)
-	return self.Server:claimResource(player, itemAsset)
+function ResourceService.Client:ClaimResource(player: Player, itemAsset: any, itemName: string)
+	return self.Server:claimResource(player, itemAsset, itemName)
 end
 
 -- Private Methods
@@ -49,13 +49,16 @@ function ResourceService:claimRng(player: Player, rngItem: any)
 	assert(isPlayer(player), "player arg must be a Player Instance")
 	assert(typeof(rngItem) == "string", "rngItem arg must be a string")
 	self:rngItemDestroyed(player, rngItem)
-	self.InventoryService:EquipTool(player, self.InventoryService:Give(player, rngItem, "RngItem"))
+	local tool = self.InventoryService:Give(player, rngItem, "RngItem")
+	if tool then
+		self.InventoryService:EquipTool(player, tool)
+		self.DataService:GetValueObject(player, "EquippedRng"):Set(rngItem)
+	end
 end
 
 function ResourceService:rngItemDestroyed(player: Player, rngItem: string)
 	assert(isPlayer(player), "player arg must be a Player Instance")
 	assert(typeof(rngItem) == "string", "rngItem arg must be a string")
-
 	if typeof(self.RngItems[player]) ~= "number" then
 		return
 	end
@@ -64,6 +67,8 @@ function ResourceService:rngItemDestroyed(player: Player, rngItem: string)
 	if index then
 		table.remove(self.RngItems[player], index)
 	end
+
+	self.DataService:GetValueObject(player, "EquippedRng"):Set("")
 end
 
 function ResourceService:resourceDestroyed(player: Player, itemAsset: any)
@@ -78,10 +83,9 @@ function ResourceService:resourceDestroyed(player: Player, itemAsset: any)
 	end
 end
 
-function ResourceService:claimResource(player: Player, itemAsset: any)
+function ResourceService:claimResource(player: Player, itemAsset: any, itemName: string)
 	assert(isPlayer(player), "player arg must be a Player Instance")
 	local ResourceValueObject = self.DataService:GetValueObject(player, "Resources")
-
 	local profile = self:getProfile(player)
 	if not profile then
 		return {
@@ -91,19 +95,15 @@ function ResourceService:claimResource(player: Player, itemAsset: any)
 
 	if profile[itemAsset] and profile[itemAsset] > 0 then
 		profile[itemAsset] -= 1
-
-		local itemName = itemAsset.Name:split("_")[1]
-		local resource = itemConfig.Items[itemName].Resource
-		local amount = resourceConfig.Resources[resource].Amount
-		ResourceValueObject:Set(ResourceValueObject:Get() + amount)
-
-		return {
-			Status = true,
-		}
 	end
 
+	itemName = itemName or itemAsset.Name:split("_")[1]
+	local resource = itemConfig.Items[itemName].Resource
+	local amount = resourceConfig.Resources[resource].Amount
+	ResourceValueObject:Set(ResourceValueObject:Get() + amount)
+
 	return {
-		Status = false,
+		Status = true,
 	}
 end
 

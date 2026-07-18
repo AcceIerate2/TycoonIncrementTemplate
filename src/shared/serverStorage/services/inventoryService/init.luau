@@ -143,13 +143,22 @@ end
 function InventoryService:LoadTools(player: Player)
 	local function load()
 		local playerInventory = self:GetPlayerInventoryValueObject(player):Get()
-
 		for toolName: string, data: {
 			Quantity: number,
 			Handler: string,
 		} in pairs(playerInventory) do
 			local tool = self.Utility:CreateTool(toolName, data.Handler)
 			tool.Parent = player.Backpack
+		end
+
+		local equippedRngTool = self.DataService:GetValue(player, "EquippedRng")
+		if equippedRngTool and equippedRngTool ~= "" and playerInventory[equippedRngTool] then
+			local tool = player.Backpack:FindFirstChild(equippedRngTool)
+			if tool then
+				task.delay(1, function()
+					self:EquipTool(player, tool)
+				end)
+			end
 		end
 	end
 

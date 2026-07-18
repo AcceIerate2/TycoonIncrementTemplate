@@ -11,6 +11,7 @@ local RngItemTool = {
 
 function RngItemTool:Bind(tool: Tool)
 	local connections = {}
+	local instances = {}
 
 	table.insert(
 		connections,
@@ -23,6 +24,12 @@ function RngItemTool:Bind(tool: Tool)
 		connections,
 		tool.Unequipped:Connect(function()
 			self.RngController:Disconnect(tool.Name)
+			for _, v in pairs(instances) do
+				if v then
+					v:Destroy()
+				end
+			end
+			table.clear(instances)
 		end)
 	)
 

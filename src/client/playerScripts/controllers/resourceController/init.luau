@@ -19,15 +19,17 @@ local ResourceAssets = Assets:WaitForChild("Resources")
 local RngAssets = Assets:WaitForChild("RngAssets")
 
 -- Helper Functions
-local function getBallAsset(resourceAsset: any)
+local function getBallAsset(resourceAsset: any, partType: Enum.PartType)
 	return InstanceCreator("Part", "Hitbox", resourceAsset, {
 		Transparency = 1,
 		CastShadow = false,
 		Massless = true,
 		Anchored = false,
-		Shape = Enum.PartType.Ball,
+		Shape = partType or Enum.PartType.Ball,
 		Size = resourceAsset:GetExtentsSize(),
 		CFrame = resourceAsset:GetPivot(),
+		CustomPhysicalProperties = partType and PhysicalProperties.new(0.01, 0.01, 0.01, 100, 100)
+			or PhysicalProperties.new(Enum.Material.Plaster),
 	})
 end
 
@@ -86,7 +88,7 @@ function ResourceController:outputRng(itemAsset: any, rngItem: string)
 	rngItem = rngItem:split("_")[1]
 
 	local rngAsset = getRngAsset(itemAsset, rngItem)
-	local ballAsset = getBallAsset(rngAsset)
+	local ballAsset = getBallAsset(rngAsset, Enum.PartType.Block)
 
 	ballAsset:AddTag("Rng")
 
@@ -117,6 +119,15 @@ function ResourceController:output(itemAsset: any)
 	ballAsset:AddTag("Resource")
 
 	resourceAsset.Parent = workspace
+
+	InstanceCreator("ObjectValue", "ItemAsset", resourceAsset, {
+		Value = itemAsset,
+	})
+
+	InstanceCreator("StringValue", "ItemName", resourceAsset, {
+		Value = itemAsset.Name:split("_")[1],
+	})
+
 	weld(resourceAsset, ballAsset)
 
 	task.delay(120, function()
@@ -132,6 +143,10 @@ function ResourceController:output(itemAsset: any)
 end
 
 function ResourceController:claimRng(hitbox)
+	if self.RngController.Active then
+		return
+	end
+
 	local isRngItem = hitbox:HasTag("Rng")
 	if not isRngItem then
 		return
@@ -162,7 +177,7 @@ function ResourceController:claimResource(hitbox)
 
 	hitbox:SetAttribute("Claiming", true)
 	self.ResourceService
-		:ClaimResource(hitbox.Parent.Parent)
+		:ClaimResource(hitbox.Parent:WaitForChild("ItemAsset").Value, hitbox.Parent:WaitForChild("ItemName").Value)
 		:andThen(function(response: { Status: boolean })
 			if response.Status then
 				hitbox.Parent:Destroy()
@@ -216,7 +231,7 @@ function ResourceController:listenToCharacterTouchConnections()
 		table.insert(
 			connections,
 			hitbox.Touched:Connect(function(partThatTouched: BasePart)
-				if partThatTouched:HasTag("Resouce") then
+				if partThatTouched:HasTag("Resource") then
 					self:claimResource(partThatTouched)
 				elseif partThatTouched:HasTag("Rng") then
 					self:claimRng(partThatTouched)
@@ -248,6 +263,7 @@ function ResourceController:KnitInit()
 	self.ResourceService = knit.GetService("ResourceService")
 	self.DataController = knit.GetController("DataController")
 	self.PlotController = knit.GetController("PlotController")
+	self.RngController = knit.GetController("RngController")
 end
 
 function ResourceController:KnitStart()

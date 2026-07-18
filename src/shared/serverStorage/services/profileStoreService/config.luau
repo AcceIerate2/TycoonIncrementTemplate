@@ -4,6 +4,7 @@ return {
 
 		Index = {},
 		Inventory = {},
+		EquippedRng = "",
 
 		CashToClaim = 0,
 		ProcessIncrement = 1,

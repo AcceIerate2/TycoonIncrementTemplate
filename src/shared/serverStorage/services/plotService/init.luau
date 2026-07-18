@@ -106,6 +106,7 @@ function PlotService:place(player: Player, referenceId: string, slotIndex: numbe
 	itemAsset.Parent = plotAsset.PlacedItems
 
 	self.ResourceService:ActivateItem(player, itemAsset)
+	return itemAsset
 end
 
 -- Public Methods
@@ -253,7 +254,7 @@ function PlotService:PlaceItem(player: Player, itemName: string)
 	end)
 
 	self.IndexService:AddToIndex(player, itemName)
-	self:place(player, referenceId, newSlotIndex)
+	return self:place(player, referenceId, newSlotIndex)
 end
 
 function PlotService:RemoveItem(player: Player, referenceId: string)

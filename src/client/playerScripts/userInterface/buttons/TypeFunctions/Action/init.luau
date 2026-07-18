@@ -9,6 +9,7 @@ local functions = {
 	Teleport = require(script.teleportAction),
 	PurchasePrompt = require(script.purchasePromptAction),
 	DiscardRng = require(script.discardRng),
+	UnlockRng = require(script.unlockRng),
 }
 
 return function(button)

@@ -2,9 +2,53 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Assets
+local RngAssets = ReplicatedStorage:WaitForChild("Assets"):WaitForChild("RngAssets")
 local tools = ReplicatedStorage.Assets.Tools
 local toolTemplate = tools.Template
 assert(typeof(toolTemplate) == "Instance", `Could not find Tool: [Template] under ServerStorage:src:Tools`)
+
+-- Utility Modules
+local CollisionHandler = require(ReplicatedStorage.src.utility.CollisionHandler)
+local InstanceCreator = require(ReplicatedStorage.src.utility.InstanceCreator)
+
+-- Helper Functions
+local function getRngAsset(rngAssetName)
+	local asset = RngAssets:WaitForChild(rngAssetName):Clone()
+	CollisionHandler.ToggleCollisionProperties(asset, {
+		CanCollide = false,
+		CanTouch = false,
+		CanQuery = false,
+		CastShadow = false,
+		Anchored = false,
+		Massless = true,
+	}, {})
+	return asset
+end
+
+local function handlerPart(asset, tool)
+	local handler = InstanceCreator("Part", "Handle", tool, {
+		Size = asset:GetExtentsSize(),
+		Transparency = 1,
+		Material = Enum.Material.Neon,
+		CastShadow = false,
+		Massless = true,
+		Anchored = false,
+		CanCollide = false,
+		CanTouch = false,
+		CanQuery = false,
+	})
+	return handler
+end
+
+local function weld(handler, asset)
+	for _, desc in pairs(asset:GetDescendants()) do
+		InstanceCreator("WeldConstraint", "WeldConstraint", handler, {
+			Part0 = desc,
+			Part1 = handler,
+			Enabled = true,
+		})
+	end
+end
 
 -->
 local Utility = {}
@@ -14,8 +58,14 @@ function Utility:CreateTool(itemName: string, handler: string, textureId: string
 	local toolName: string = itemName:split("_")[1] :: string
 
 	local source = tools:FindFirstChild(toolName) or toolTemplate
-	local tool = source:Clone()
+	local tool = source:Clone() :: Tool
 	tool:SetAttribute("Handler", handler)
+
+	local asset = getRngAsset(itemName)
+	local handle = handlerPart(asset, tool)
+	asset.Parent = tool
+	asset:PivotTo(handle.CFrame)
+	weld(handle, asset)
 
 	tool.Name = itemName
 	tool.TextureId = typeof(textureId) == "string" and textureId or tool.TextureId

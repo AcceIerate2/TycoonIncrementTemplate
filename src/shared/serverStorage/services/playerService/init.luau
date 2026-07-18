@@ -46,6 +46,10 @@ function PlayerService:load(player: Player)
 	-- BuyItemService
 	playerDisconnectFunctions.buyItemServiceDisconnectFunction = self.BuyItemService:Connect(player)
 
+	-- InventoryService
+	self.InventoryService:LoadTools(player)
+
+	-- OfflineResourceService
 	playerDisconnectFunctions.offlineResourceServiceDisconnectFunction = self.OfflineResourceService:Connect(player)
 
 	-- Gamepasses
@@ -104,6 +108,7 @@ function PlayerService:KnitInit()
 	self.ProcessUpgradeService = knit.GetService("ProcessUpgradeService")
 	self.BuyItemService = knit.GetService("BuyItemService")
 	self.OfflineResourceService = knit.GetService("OfflineResourceService")
+	self.InventoryService = knit.GetService("InventoryService")
 
 	-- Player Connections
 	Players.PlayerAdded:Connect(function(player: Player)
