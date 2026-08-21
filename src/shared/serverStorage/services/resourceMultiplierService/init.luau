@@ -31,6 +31,10 @@ end
 function ResourceMultiplierService:KnitStart()
 	while true do
 		self.Multiplier = math.round(((math.random(50, 200)) / 100) * 10) / 10
+		if self.Multiplier == 1 or self.Multiplier == 2 then
+			self.Multiplier = `{self.Multiplier}.0`
+		end
+
 		self.Client.MultiplierChanged:FireAll(self.Multiplier)
 
 		Gui.MultiplierContainer.Label.RichText = true
