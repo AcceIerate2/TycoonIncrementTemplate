@@ -22,9 +22,10 @@ local DepositService = knit.CreateService({
 -- Private Methods
 function DepositService:depositResources(player: Player)
 	assert(isPlayer(player), "player arg must be a Player Instance")
+	local depositMultiplier = self.ResourceMultiplierService.Multiplier
 	local resources = self.DataService:GetValueObject(player, "Resources")
 	local unprocessedResources = self.DataService:GetValueObject(player, "UnprocessedResources")
-	unprocessedResources:Set(unprocessedResources:Get() + resources:Get())
+	unprocessedResources:Set(unprocessedResources:Get() + (resources:Get() * depositMultiplier))
 	resources:Set(0)
 end
 
@@ -78,6 +79,7 @@ end
 function DepositService:KnitInit()
 	self.PlotService = knit.GetService("PlotService")
 	self.DataService = knit.GetService("DataService")
+	self.ResourceMultiplierService = knit.GetService("ResourceMultiplierService")
 end
 
 return DepositService
